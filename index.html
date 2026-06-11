@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex Tester &amp; Explainer</title>
+<meta name="description" content="Test a regular expression against sample text and get a plain-English breakdown of what each part of the pattern does. Browser-only.">
+<meta name="ai.description" content="Single-file HTML tool that combines a regex tester with a plain-English explainer. The explainer walks through the regex token by token (anchors, character classes, quantifiers, groups, etc.) and produces a numbered description of what each piece does. Useful for learning regex and for documenting team-shared patterns. No frameworks, no dependencies, no third-party scripts. Light and dark themes.">
+<meta property="og:title" content="Regex Tester and Explainer">
+<meta property="og:description" content="Test a regex and see what each part does in plain English.">
+<meta property="og:type" content="website">
+<style>
+:root {
+  --bg: #e8edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f7fa;
+  --ink: #0d1f33;
+  --ink-soft: #4a5568;
+  --rule: #c8d3e0;
+  --rule-strong: #0d1f33;
+  --accent: #b8390a;
+  --accent-soft: #fce8d9;
+  --highlight: #fff3a3;
+  --highlight-strong: #fde047;
+  --serif: "Iowan Old Style", "Charter", "Georgia", serif;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --ok: #1f6f43;
+  --ok-soft: #e3f2ea;
+  --err: #b3261e;
+  --err-soft: #fbe9e7;
+}
+[data-theme="dark"] {
+  --bg: #0d1421;
+  --surface: #1a2332;
+  --surface-2: #14202e;
+  --ink: #e8edf2;
+  --ink-soft: #94a3b8;
+  --rule: #2a3a52;
+  --rule-strong: #e8edf2;
+  --accent: #ff7a3c;
+  --accent-soft: #3a1f10;
+  --highlight: #5e4e0e;
+  --highlight-strong: #846b14;
+  --ok: #7fc99c;
+  --ok-soft: #1f3327;
+  --err: #f08585;
+  --err-soft: #3d2222;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.55;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+.skip-link { position: absolute; left: -9999px; top: 0; background: var(--accent); color: var(--surface); padding: 0.5rem 1rem; z-index: 100; font-weight: 600; }
+.skip-link:focus { left: 1rem; top: 1rem; }
+
+.layout { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: end;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rule-strong);
+  margin-bottom: 2rem;
+}
+.brand {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+h1 {
+  font-family: var(--sans);
+  font-size: clamp(1.625rem, 4vw, 2.375rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+h1 .accent { color: var(--accent); font-family: var(--mono); }
+.subtitle {
+  margin-top: 0.5rem;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  max-width: 520px;
+}
+
+.theme-toggle {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  padding: 0.5rem 0.75rem;
+  font: inherit; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { background: var(--ink); color: var(--bg); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle svg { width: 14px; height: 14px; }
+
+.section { margin-bottom: 1.25rem; }
+.section-head {
+  display: flex; align-items: baseline; gap: 0.625rem;
+  margin-bottom: 0.5rem;
+}
+.section-num {
+  font-family: var(--mono);
+  font-size: 0.6875rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.08em;
+}
+.section-title {
+  font-size: 0.8125rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.field { margin-bottom: 0.5rem; }
+label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.regex-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.625rem 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+textarea { resize: vertical; min-height: 140px; }
+input:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+
+.flags-input {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.625rem 0.75rem;
+  display: flex; align-items: center; gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  min-width: 110px;
+}
+.flag-chip {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  user-select: none;
+}
+.flag-chip[aria-checked="true"] {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+.flag-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.help { margin-top: 0.4rem; font-size: 0.75rem; color: var(--ink-soft); line-height: 1.55; }
+
+/* Match overlay */
+.text-area-wrap {
+  position: relative;
+}
+.match-overlay {
+  position: absolute;
+  inset: 0;
+  padding: 0.625rem 0.75rem;
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: transparent;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  border: 1px solid transparent;
+}
+.match-overlay mark {
+  background: var(--highlight);
+  color: var(--ink);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.match-overlay mark.alt {
+  background: var(--highlight-strong);
+}
+
+/* Status pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.625rem;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+}
+.status-pill.ok { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+.status-pill.err { background: var(--err-soft); color: var(--err); border-color: var(--err); }
+.status-pill.warn { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+.results-row {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.625rem;
+}
+
+/* Explainer */
+.explainer {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 1rem 1.25rem;
+}
+.explainer ol {
+  list-style: none;
+  counter-reset: tok;
+}
+.explainer li {
+  counter-increment: tok;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 0.625rem;
+  align-items: baseline;
+}
+.explainer li:first-child { border-top: none; padding-top: 0; }
+.explainer li::before {
+  content: counter(tok);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 2px;
+  padding: 0.15rem 0;
+  text-align: center;
+  line-height: 1.4;
+}
+.token-display {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  display: inline-block;
+  margin-right: 0.4rem;
+}
+.token-desc { color: var(--ink); font-size: 0.875rem; }
+
+/* Match list */
+.match-list {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.875rem 1rem;
+}
+.match-item {
+  display: flex; align-items: baseline; gap: 0.625rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+.match-item:first-child { border-top: none; padding-top: 0; }
+.match-idx {
+  color: var(--ink-soft);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  min-width: 30px;
+}
+.match-text {
+  background: var(--highlight);
+  color: var(--ink);
+  padding: 0 4px;
+  border-radius: 2px;
+  word-break: break-word;
+  flex: 1;
+}
+.match-pos { color: var(--ink-soft); font-size: 0.6875rem; }
+
+.empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+footer a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
+footer a:hover, footer a:focus { color: var(--accent); }
+
+@media (max-width: 540px) {
+  .layout { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.5rem; }
+  header { grid-template-columns: 1fr; }
+  .regex-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body data-theme="light">
+<a href="#main" class="skip-link">Skip to main content</a>
+<div class="layout">
+
+  <header>
+    <div>
+      <div class="brand">REGEX // TESTER + EXPLAINER</div>
+      <h1>Test a pattern. <span class="accent">/regex/</span><br>See what it does.</h1>
+      <p class="subtitle">Paste a regex. See matches highlighted. Get a numbered, plain-English breakdown of what each token does.</p>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-btn" aria-label="Toggle dark theme" aria-pressed="false">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+      </svg>
+      <span id="theme-label">Dark</span>
+    </button>
+  </header>
+
+  <main id="main">
+
+    <section class="section">
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Pattern</h2>
+      </div>
+      <div class="regex-row">
+        <input type="text" id="pattern-input" spellcheck="false" autocomplete="off" placeholder="\b[A-Z][a-z]+\s\d{4}\b">
+        <div class="flags-input" role="group" aria-label="Regex flags">
+          <span class="flag-chip" data-flag="g" role="checkbox" tabindex="0" aria-checked="true" title="Global">g</span>
+          <span class="flag-chip" data-flag="i" role="checkbox" tabindex="0" aria-checked="false" title="Case-insensitive">i</span>
+          <span class="flag-chip" data-flag="m" role="checkbox" tabindex="0" aria-checked="false" title="Multiline">m</span>
+          <span class="flag-chip" data-flag="s" role="checkbox" tabindex="0" aria-checked="false" title="Dotall">s</span>
+        </div>
+      </div>
+      <p class="help">Toggle flags by clicking. <code>g</code> = find all, <code>i</code> = case-insensitive, <code>m</code> = multiline, <code>s</code> = dot matches newlines.</p>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Test text</h2>
+      </div>
+      <div class="text-area-wrap">
+        <textarea id="text-input" spellcheck="false" placeholder="Paste sample text here..."></textarea>
+        <div class="match-overlay" id="match-overlay" aria-hidden="true"></div>
+      </div>
+      <div class="results-row" id="results-row"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <h2 class="section-title">Matches</h2>
+      </div>
+      <div id="match-list-container"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Pattern explained</h2>
+      </div>
+      <div id="explainer-container"></div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Source: <a href="https://github.com/0xelitesystem/regex-tester-with-explainer" target="_blank" rel="noopener">github.com/0xelitesystem/regex-tester-with-explainer</a></p>
+    <p>Related: <a href="https://github.com/0xelitesystem/prompt-diff" target="_blank" rel="noopener">prompt-diff</a> &middot; <a href="https://github.com/0xelitesystem/og-image-generator" target="_blank" rel="noopener">og-image-generator</a> &middot; <a href="https://github.com/0xelitesystem/single-file-saas-template" target="_blank" rel="noopener">single-file-saas-template</a></p>
+    <p>Uses the JavaScript regex engine. Patterns that work here may behave differently in PCRE, Python's re, Go's regexp, and other engines. No data leaves your browser.</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+// =============================================================================
+// Default values
+// =============================================================================
+const DEFAULT_PATTERN = "\\b[A-Z][a-z]+\\s\\d{4}\\b";
+const DEFAULT_TEXT = `Sample text for testing your pattern.
+
+Here are some examples to play with:
+- January 2024
+- February 2025
+- july 2026 (lowercase first letter, won't match)
+- not a match here
+- December 1999
+- 2024 January (number first, won't match the default pattern)
+
+Try changing the regex above and see what matches.`;
+
+// =============================================================================
+// State
+// =============================================================================
+let flags = new Set(["g"]);
+
+// =============================================================================
+// Helpers
+// =============================================================================
+const $ = (id) => document.getElementById(id);
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+));
+
+// =============================================================================
+// Regex tokenizer for the explainer.
+// Walks the pattern character by character and identifies tokens:
+// anchors, character classes, quantifiers, groups, escape sequences, literals.
+// Returns an array of { display, description } tokens.
+// =============================================================================
+function tokenize(pattern) {
+  const tokens = [];
+  let i = 0;
+
+  function describeEscape(ch) {
+    const map = {
+      "d": "Any digit (0-9)",
+      "D": "Any character that is not a digit",
+      "w": "Any word character (letter, digit, or underscore)",
+      "W": "Any character that is not a word character",
+      "s": "Any whitespace (space, tab, newline)",
+      "S": "Any character that is not whitespace",
+      "b": "A word boundary (between a word and non-word character)",
+      "B": "Not a word boundary",
+      "n": "A newline",
+      "r": "A carriage return",
+      "t": "A tab",
+      "0": "A null character",
+      ".": "A literal period",
+      "\\": "A literal backslash",
+      "/": "A literal forward slash",
+      "(": "A literal opening parenthesis",
+      ")": "A literal closing parenthesis",
+      "[": "A literal opening bracket",
+      "]": "A literal closing bracket",
+      "{": "A literal opening brace",
+      "}": "A literal closing brace",
+      "+": "A literal plus sign",
+      "*": "A literal asterisk",
+      "?": "A literal question mark",
+      "|": "A literal pipe",
+      "^": "A literal caret",
+      "$": "A literal dollar sign"
+    };
+    return map[ch] || `Escape: matches the literal character "${ch}"`;
+  }
+
+  function describeCharClass(content, negated) {
+    const parts = [];
+    let j = 0;
+    while (j < content.length) {
+      const c = content[j];
+      if (c === "\\" && j + 1 < content.length) {
+        const next = content[j + 1];
+        const map = {
+          "d": "any digit",
+          "D": "any non-digit",
+          "w": "any word character",
+          "W": "any non-word character",
+          "s": "any whitespace",
+          "S": "any non-whitespace",
+          "n": "newline",
+          "r": "carriage return",
+          "t": "tab"
+        };
+        parts.push(map[next] || `the literal character "${next}"`);
+        j += 2;
+      } else if (j + 2 < content.length && content[j + 1] === "-") {
+        parts.push(`characters from "${c}" through "${content[j + 2]}"`);
+        j += 3;
+      } else {
+        parts.push(`the character "${c}"`);
+        j += 1;
+      }
+    }
+    const combined = parts.length === 1 ? parts[0] : parts.join(", ");
+    return negated
+      ? `Any single character that is NOT ${combined}`
+      : `Any single character that matches ${combined}`;
+  }
+
+  function describeQuantifier(q) {
+    const map = {
+      "*": "Zero or more of the preceding (greedy)",
+      "+": "One or more of the preceding (greedy)",
+      "?": "Zero or one of the preceding (optional, greedy)",
+      "*?": "Zero or more of the preceding (lazy)",
+      "+?": "One or more of the preceding (lazy)",
+      "??": "Zero or one of the preceding (lazy)"
+    };
+    if (map[q]) return map[q];
+    const m = q.match(/^\{(\d+)(?:,(\d*))?\}(\??)$/);
+    if (m) {
+      const min = m[1];
+      const max = m[2];
+      const lazy = m[3] === "?" ? " (lazy)" : "";
+      if (max === undefined) return `Exactly ${min} of the preceding${lazy}`;
+      if (max === "") return `${min} or more of the preceding${lazy}`;
+      return `Between ${min} and ${max} of the preceding${lazy}`;
+    }
+    return "A quantifier";
+  }
+
+  while (i < pattern.length) {
+    const c = pattern[i];
+
+    // Anchors
+    if (c === "^") {
+      tokens.push({ display: "^", description: "Start of string (or start of line with the m flag)" });
+      i++;
+      continue;
+    }
+    if (c === "$") {
+      tokens.push({ display: "$", description: "End of string (or end of line with the m flag)" });
+      i++;
+      continue;
+    }
+
+    // Escape sequence
+    if (c === "\\" && i + 1 < pattern.length) {
+      const next = pattern[i + 1];
+      tokens.push({ display: "\\" + next, description: describeEscape(next) });
+      i += 2;
+      continue;
+    }
+
+    // Character class
+    if (c === "[") {
+      let j = i + 1;
+      let negated = false;
+      if (pattern[j] === "^") { negated = true; j++; }
+      const start = j;
+      while (j < pattern.length && pattern[j] !== "]") {
+        if (pattern[j] === "\\") j += 2;
+        else j++;
+      }
+      const content = pattern.slice(start, j);
+      const display = pattern.slice(i, j + 1);
+      tokens.push({ display, description: describeCharClass(content, negated) });
+      i = j + 1;
+      continue;
+    }
+
+    // Group
+    if (c === "(") {
+      let depth = 1;
+      let j = i + 1;
+      while (j < pattern.length && depth > 0) {
+        if (pattern[j] === "\\") { j += 2; continue; }
+        if (pattern[j] === "(") depth++;
+        if (pattern[j] === ")") depth--;
+        if (depth === 0) break;
+        j++;
+      }
+      const display = pattern.slice(i, j + 1);
+      let description = "A capture group";
+      if (display.startsWith("(?:")) description = "A non-capture group";
+      else if (display.startsWith("(?=")) description = "A positive lookahead (must be followed by this)";
+      else if (display.startsWith("(?!")) description = "A negative lookahead (must not be followed by this)";
+      else if (display.startsWith("(?<=")) description = "A positive lookbehind (must be preceded by this)";
+      else if (display.startsWith("(?<!")) description = "A negative lookbehind (must not be preceded by this)";
+      else if (display.match(/^\(\?<[A-Za-z_]/)) description = "A named capture group";
+      tokens.push({ display, description });
+      i = j + 1;
+      continue;
+    }
+
+    // Quantifier (attaches to previous token)
+    if (c === "*" || c === "+" || c === "?") {
+      let q = c;
+      if (pattern[i + 1] === "?") { q += "?"; i++; }
+      tokens.push({ display: q, description: describeQuantifier(q) });
+      i++;
+      continue;
+    }
+    if (c === "{") {
+      const close = pattern.indexOf("}", i);
+      if (close > -1) {
+        let q = pattern.slice(i, close + 1);
+        let extra = 0;
+        if (pattern[close + 1] === "?") { q += "?"; extra = 1; }
+        tokens.push({ display: q, description: describeQuantifier(q) });
+        i = close + 1 + extra;
+        continue;
+      }
+    }
+
+    // Alternation
+    if (c === "|") {
+      tokens.push({ display: "|", description: "Alternation: matches the expression on either side" });
+      i++;
+      continue;
+    }
+
+    // Wildcard
+    if (c === ".") {
+      tokens.push({ display: ".", description: "Any single character (except newline, unless the s flag is set)" });
+      i++;
+      continue;
+    }
+
+    // Literal
+    // Coalesce consecutive literals into one token for cleaner output
+    let lit = c;
+    let j = i + 1;
+    while (j < pattern.length && !"^$.()[]{}|*+?\\".includes(pattern[j])) {
+      lit += pattern[j];
+      j++;
+    }
+    tokens.push({ display: lit, description: `Matches the literal text "${lit}"` });
+    i = j;
+  }
+
+  return tokens;
+}
+
+// =============================================================================
+// Run
+// =============================================================================
+function runMatch() {
+  const pattern = $("pattern-input").value;
+  const text = $("text-input").value;
+  const overlay = $("match-overlay");
+  const resultsRow = $("results-row");
+  const matchListContainer = $("match-list-container");
+  const explainerContainer = $("explainer-container");
+
+  if (!pattern) {
+    overlay.innerHTML = "";
+    resultsRow.innerHTML = '<div class="status-pill">Empty pattern</div>';
+    matchListContainer.innerHTML = '<div class="empty">No pattern to test.</div>';
+    explainerContainer.innerHTML = '<div class="empty">Type a pattern above to see the breakdown.</div>';
+    return;
+  }
+
+  // Compile
+  let re;
+  try {
+    re = new RegExp(pattern, [...flags].join(""));
+  } catch (err) {
+    overlay.innerHTML = "";
+    resultsRow.innerHTML = `<div class="status-pill err">Invalid: ${escapeHtml(err.message)}</div>`;
+    matchListContainer.innerHTML = '<div class="empty">Pattern does not compile.</div>';
+    // Still show explainer even for invalid patterns; they may be fixed shortly
+    showExplainer(pattern);
+    return;
+  }
+
+  // Find matches
+  let matches = [];
+  if (flags.has("g")) {
+    let m;
+    let safety = 0;
+    while ((m = re.exec(text)) !== null && safety++ < 10000) {
+      matches.push({ index: m.index, text: m[0], groups: m.slice(1) });
+      if (m[0].length === 0) re.lastIndex++; // avoid infinite loop on zero-length matches
+    }
+  } else {
+    const m = re.exec(text);
+    if (m) matches.push({ index: m.index, text: m[0], groups: m.slice(1) });
+  }
+
+  // Render overlay with highlights
+  if (matches.length === 0 || text === "") {
+    overlay.innerHTML = "";
+  } else {
+    let html = "";
+    let cursor = 0;
+    matches.forEach((m, idx) => {
+      const before = text.slice(cursor, m.index);
+      html += escapeHtml(before);
+      html += `<mark${idx % 2 === 1 ? ' class="alt"' : ""}>${escapeHtml(m.text)}</mark>`;
+      cursor = m.index + m.text.length;
+    });
+    html += escapeHtml(text.slice(cursor));
+    overlay.innerHTML = html;
+  }
+
+  // Status pill
+  resultsRow.innerHTML = matches.length > 0
+    ? `<div class="status-pill ok">${matches.length} match${matches.length === 1 ? "" : "es"}</div>`
+    : `<div class="status-pill warn">No matches</div>`;
+
+  // Match list
+  if (matches.length === 0) {
+    matchListContainer.innerHTML = '<div class="empty">No matches in the test text.</div>';
+  } else {
+    let html = '<div class="match-list">';
+    matches.slice(0, 100).forEach((m, idx) => {
+      html += `<div class="match-item">
+        <span class="match-idx">${idx + 1}</span>
+        <span class="match-text">${escapeHtml(m.text)}</span>
+        <span class="match-pos">at index ${m.index}</span>
+      </div>`;
+    });
+    if (matches.length > 100) html += `<div class="empty" style="padding: 0.5rem 0;">... and ${matches.length - 100} more</div>`;
+    html += "</div>";
+    matchListContainer.innerHTML = html;
+  }
+
+  showExplainer(pattern);
+}
+
+function showExplainer(pattern) {
+  const container = $("explainer-container");
+  if (!pattern) {
+    container.innerHTML = '<div class="empty">No pattern.</div>';
+    return;
+  }
+  const tokens = tokenize(pattern);
+  if (tokens.length === 0) {
+    container.innerHTML = '<div class="empty">No tokens parsed.</div>';
+    return;
+  }
+  let html = '<div class="explainer"><ol>';
+  for (const t of tokens) {
+    html += `<li>
+      <span></span>
+      <div>
+        <span class="token-display">${escapeHtml(t.display)}</span>
+        <span class="token-desc">${escapeHtml(t.description)}</span>
+      </div>
+    </li>`;
+  }
+  html += "</ol></div>";
+  container.innerHTML = html;
+}
+
+// =============================================================================
+// Sync overlay scroll with textarea
+// =============================================================================
+$("text-input").addEventListener("scroll", () => {
+  $("match-overlay").scrollTop = $("text-input").scrollTop;
+});
+
+// =============================================================================
+// Wiring
+// =============================================================================
+$("pattern-input").addEventListener("input", runMatch);
+$("text-input").addEventListener("input", runMatch);
+
+// Flag chips
+document.querySelectorAll(".flag-chip").forEach(chip => {
+  chip.addEventListener("click", () => toggleFlag(chip));
+  chip.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      toggleFlag(chip);
+    }
+  });
+});
+function toggleFlag(chip) {
+  const f = chip.dataset.flag;
+  if (flags.has(f)) flags.delete(f); else flags.add(f);
+  chip.setAttribute("aria-checked", flags.has(f) ? "true" : "false");
+  runMatch();
+}
+
+// Theme
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  $("theme-label").textContent = theme === "dark" ? "Light" : "Dark";
+  $("theme-btn").setAttribute("aria-pressed", String(theme === "dark"));
+  const icon = $("theme-icon");
+  if (theme === "dark") {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  } else {
+    icon.innerHTML = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>';
+  }
+}
+$("theme-btn").addEventListener("click", () => {
+  applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+});
+if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) applyTheme("dark");
+
+// Initial state
+$("pattern-input").value = DEFAULT_PATTERN;
+$("text-input").value = DEFAULT_TEXT;
+runMatch();
+</script>
+</body>
+</html>
