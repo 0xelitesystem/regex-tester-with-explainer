@@ -72,6 +72,10 @@ If you need to test a pattern for a specific engine, use that engine's playgroun
 - Doesn't translate between regex flavors. JavaScript regex only.
 - Doesn't store your patterns. Refreshing the page clears state.
 
+## More
+
+Part of a catalog of single-file browser tools and plain-language references, all MIT licensed and dependency-free: [0xelitesystem.github.io](https://0xelitesystem.github.io/). Built by [elitesystem.ai](https://elitesystem.ai).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
