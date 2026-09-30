@@ -43,7 +43,7 @@
   --accent: #ff7a3c;
   --accent-soft: #3a1f10;
   --highlight: #5e4e0e;
-  --highlight-strong: #846b14;
+  --highlight-strong: #7d6513;
   --ok: #7fc99c;
   --ok-soft: #1f3327;
   --err: #f08585;
@@ -876,11 +876,8 @@ runMatch();
 (function () {
   var KEY = "theme";
   var btn = document.querySelector("#theme-toggle, #theme-btn, .theme-btn, .theme-toggle, [data-theme-toggle]");
-  function host() {
-    if (document.documentElement.hasAttribute("data-theme")) { return document.documentElement; }
-    if (document.body && document.body.hasAttribute("data-theme")) { return document.body; }
-    return document.documentElement;
-  }
+  // This page's own toggle switches <body> while <html> keeps a fixed brand theme, so remember <body>.
+  function host() { return document.body || document.documentElement; }
   function current() { return host().getAttribute("data-theme") || ""; }
   function setter() {
     if (typeof setTheme === "function") { return setTheme; }
