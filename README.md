@@ -4,7 +4,7 @@ Test a regular expression against sample text AND get a plain-English breakdown 
 
 **Live demo:** https://0xelitesystem.github.io/regex-tester-with-explainer/
 
-## Why
+## Why this exists
 
 Regex101 is great for testing but its explainer is dense. Most quick "test this regex" questions don't need a full debugger; they need a fast match-and-explain loop. This is that.
 
@@ -15,7 +15,7 @@ The explainer is the headline feature. It walks the pattern token by token (anch
 - Code review when the pattern is too gnarly to read at a glance
 - Debugging your own regex when you forgot what you wrote yesterday
 
-## Use it
+## Use
 
 Open `index.html` in any browser. Or visit the hosted version at `https://0xelitesystem.github.io/regex-tester-with-explainer/` once GitHub Pages is enabled.
 
@@ -71,6 +71,23 @@ If you need to test a pattern for a specific engine, use that engine's playgroun
 - Doesn't benchmark performance. Patterns that match exponentially slow on adversarial input (catastrophic backtracking) won't be flagged here.
 - Doesn't translate between regex flavors. JavaScript regex only.
 - Doesn't store your patterns. Refreshing the page clears state.
+
+## Privacy
+
+Everything runs in your browser. The page makes no network requests and has no analytics. Your pattern and sample text stay on the page and are gone when you refresh. If you click the theme toggle, your light or dark choice is saved in your browser's localStorage under the key `theme`. Nothing else is stored.
+
+## Run locally
+
+```bash
+git clone https://github.com/0xelitesystem/regex-tester-with-explainer
+cd regex-tester-with-explainer
+```
+
+Open `index.html` in any browser. Or serve the folder with `python -m http.server 8000` and visit http://localhost:8000/.
+
+## Build
+
+No build step. The whole tool is one `index.html` file with its CSS and JavaScript inline.
 
 ## More
 
