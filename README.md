@@ -102,4 +102,4 @@ MIT. See [LICENSE](LICENSE).
 - [prompt-diff](https://github.com/0xelitesystem/prompt-diff), compare two prompt versions with diff highlighting
 - [og-image-generator](https://github.com/0xelitesystem/og-image-generator), generate Open Graph cards in your browser
 - [single-file-saas-template](https://github.com/0xelitesystem/single-file-saas-template), ship a SaaS in one HTML file
-- [prompt-templates](https://github.com/0xelitesystem/prompt-templates), production prompts targeting LLM failure modes
+- [failure-mode-prompts](https://github.com/0xelitesystem/failure-mode-prompts), production prompts targeting LLM failure modes
